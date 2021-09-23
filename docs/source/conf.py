@@ -2,7 +2,7 @@
 
 # -- Project information
 
-project = 'Vulcan'
+project = 'vulcan'
 copyright = '2021, Thiago'
 author = 'Thiago Trevizam Dorini'
 
