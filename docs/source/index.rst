@@ -5,8 +5,6 @@ Welcome to Vulcan's documentation!
 It make's heavy use of the Atomic Simulation Environment (ASE). You can look their documentation here:
 https://wiki.fysik.dtu.dk/ase/
 
-Check out the :doc:`usage` section for further information, including
-how to :ref:`installation` the project.
 
 .. note::
 
