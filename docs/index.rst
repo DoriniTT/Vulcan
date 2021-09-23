@@ -1,3 +1,11 @@
+Title
+=====
+
+Section
+-------
+
+Subsection
+~~~~~~~~~~
 A cool bit of code::
 
    Some cool Code
