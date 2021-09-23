@@ -1,3 +1,5 @@
+.. _usage:
+
 Usage
 =====
 
@@ -19,10 +21,8 @@ Installation
 It is only necessary to get two files to use this program for now: vulcan.py and vulcan.sh. They can be found at my GitHub page:
 https://github.com/DoriniTT/Vulcan
 
-.. _usage:
-
-Usage
-------------
+Initialization
+--------------
 
 At its core, this program is really simple. It has the vulcan.sh file to manage the environment for the vulcan.py file. After the configuration step, all you have to do to launch the code is:
 
