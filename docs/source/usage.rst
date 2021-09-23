@@ -2,6 +2,7 @@ Usage
 =====
 
 .. _requirements:
+
 Requirements
 ------------
 
@@ -11,6 +12,7 @@ Requirements
 - ASE (Atomic Simulation Environment).
 
 .. _installation:
+
 Installation
 ------------
 
@@ -18,8 +20,10 @@ It is only necessary to get two files to use this program for now: vulcan.py and
 https://github.com/DoriniTT/Vulcan
 
 .. _usage:
+
 Usage
 ------------
+
 At its core, this program is really simple. It has the vulcan.sh file to manage the environment for the vulcan.py file. After the configuration step, all you have to do to launch the code is:
 
 .. code-block:: console
