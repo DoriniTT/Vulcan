@@ -12,3 +12,7 @@ https://wiki.fysik.dtu.dk/ase/
 
 Contents
 --------
+
+.. toctree::
+
+   usage
