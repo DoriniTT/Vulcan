@@ -1,31 +1,20 @@
-Title
-=====
+.. Vulcan - A VASP launcher code using Python documentation master file, created by
+   sphinx-quickstart on Thu Sep 23 10:34:42 2021.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-Section
--------
+Welcome to Vulcan - A VASP launcher code using Python's documentation!
+======================================================================
 
-Subsection
-~~~~~~~~~~
-A cool bit of code::
-
-   Some cool Code
-
-.. code-block:: rst
-
-   A bit of **rst** which should be *highlighted* properly.
-   
 .. toctree::
    :maxdepth: 2
+   :caption: Contents:
 
-   install
-   support
 
-Installation
 
-At the command line:
+Indices and tables
+==================
 
-easy_install crawler
-
-Or, if you have pip installed:
-
-pip install crawler
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

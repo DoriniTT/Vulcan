@@ -37,7 +37,7 @@ extensions = [
 templates_path = ['_templates']
 
 # The root document.
-root_doc = 'index2'
+root_doc = 'index'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -56,6 +56,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+<<<<<<< HEAD
 
 import sphinx_rtd_theme
 
@@ -65,3 +66,5 @@ extensions = [
 ]
 
 html_theme = "sphinx_rtd_theme"
+=======
+>>>>>>> 23084f262b81296dae5f60135ae85e816edbbe91
