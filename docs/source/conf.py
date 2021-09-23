@@ -2,7 +2,7 @@
 
 # -- Project information
 
-project = 'vulcan'
+project = 'Vulcan'
 copyright = '2021, Thiago'
 author = 'Thiago Trevizam Dorini'
 
@@ -32,8 +32,3 @@ html_theme = 'sphinx_rtd_theme'
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
-
-import sys
-import os
-pwd = os.getcwd()
-sys.path.append(pwd)
