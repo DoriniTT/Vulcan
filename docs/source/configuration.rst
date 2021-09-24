@@ -62,7 +62,7 @@ In my case, I automitized the number of processors that the JOB script will laun
 
 **Important:** The only line that you cannot touch in the JOB script is the: 
 
-.. code:: python
+.. code-block:: console
 
     python run_$structure.py 
 
@@ -84,5 +84,4 @@ Again, it has default parameters that works well for some cases.
 
 Configuration - vulcan.sh
 =========================
-
 
