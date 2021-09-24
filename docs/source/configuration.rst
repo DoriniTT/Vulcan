@@ -1,7 +1,7 @@
 .. _configuration:
 
 Configuration
-============
+=============
 
 This is the most important part. Let's do a step-by-step general configuration with a example structure.
 
@@ -63,5 +63,3 @@ Again, it has default parameters that works well for some cases, but it depends.
 .. note::
 
     The **run_step_relax** function is the most versitile function in the code. Please try to understand its format if you want to add a new type of calculation.
-
-
