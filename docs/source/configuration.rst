@@ -1,7 +1,3 @@
-*********
-Chapter 2
-*********
-
 .. _configuration1:
 
 Configuration - vulcan.py
