@@ -31,10 +31,3 @@ At its core, this program is really simple. It has the vulcan.sh file to manage 
    $ sh vulcan.sh
 
 But first, we need to know how to configure these files for the type of calculation that we intend to do, which is what we will see in the next section.
-
-.. _configuration:
-
-Configuration
-----------------
-
-This is the most important part. Let's do a step-by-step general configuration with a example structure.
