@@ -1,3 +1,7 @@
+*********
+Chapter 3
+*********
+
 .. _useful_scripts:
 
 Useful scripts
