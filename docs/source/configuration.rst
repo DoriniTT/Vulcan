@@ -36,10 +36,14 @@ In the vulcan.py script, this needs to be done under the **DEFINE THE STRUCTURES
 
 We will begin creating an Cu-FCC structure:
 
-.. code:: python
+.. code:: python3
+
+    #################### DEFINE THE STRUCTURES HERE ########################
 
     cu = bulk('Cu', 'fcc', a=3.6)
     struc = [cu]
+
+    #######################################################################
 
 Here we will put only one structure to make things easier, but the program is made so that you can put as much structures as you want.
 That's all you need for this part. It becames more complex according to the structures that you want to create, but this part is entirely up to you.
@@ -64,7 +68,7 @@ In my case, I automitized the number of processors that the JOB script will laun
 
 .. code-block:: console
 
-    python run_$structure.py 
+    $ python run_$structure.py 
 
 Please leave this line as the last one in your job, otherwise the code will not work.
 
