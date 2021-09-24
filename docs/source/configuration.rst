@@ -94,7 +94,7 @@ Now, this file's configuration will be devided into two parts: A **permanent** c
 For the **permanent** configuration, the first thing you need is to define the ``machine`` bash variable with the same name as your supercomputer.
 Let's say you are in a cluster called **samba**:
 
-.. code-block:: console
+::
 
     machine="samba"
 
@@ -106,14 +106,14 @@ Now you also need to add a ``elif`` under the ``Creating the vasp.slurm`` commen
 
 Therefore, in our example, you should add the line:
 
-.. code-block:: console
+::
 
     elif [[ $machine == "samba" ]]; then
         echo -e "from main_launch import *\nx = Calculo('$here' ,'$work', '$database', '$xc', $encut)\nx.launch_samba($structure)" > launch_$structure.py
 
 Next, under the ``LAUNCH`` commentary, you need to add another ``elif``:
 
-.. code-block:: console
+::
 
     elif [[ $machine == "samba" ]]; then
         echo "Samba!"
@@ -133,7 +133,7 @@ Variables on the vulcan.sh
 
 The last thing you need to configure are the variables at the top of the file. I'll put a standand configuration and explain it.
 
-.. code-block:: console
+::
 
     #-------Parameters------#
     PROJECT="VULCAN_PROJECT"
