@@ -6,7 +6,7 @@ Configuration
 This is the most important part. Let's do a step-by-step general configuration with a example structure.
 
 I'll assume that you have access to a supercomputer to launch your calculations as a job (i.e. Slurm). I'll show later how to launch your calculations in your desktop machine later. 
-To beggin with, create a new directory in your $HOME (~) for this project and put both the vulcan.py and vulcan.sh there.
+To begin with, create a new directory in your $HOME (~) for this project and put both the vulcan.py and vulcan.sh there.
 
 .. code-block:: console
 
@@ -36,10 +36,8 @@ In the vulcan.py script, this needs to be done under the **DEFINE THE STRUCTURES
 
 We will begin creating an Cu-FCC structure:
 
-.. code-block:: console
-
-    cu = bulk('Cu', 'fcc', a=3.6)
-    struc = [cu]
+>>> cu = bulk('Cu', 'fcc', a=3.6)
+>>> struc = [cu]
 
 Here we will put only one structure to make things easier, but the program is made so that you can put as much structures as you want.
 That's all you need for this part. It becames more complex according to the structures that you want to create, but this part is entirely up to you.
@@ -63,3 +61,5 @@ Again, it has default parameters that works well for some cases, but it depends.
 .. note::
 
     The **run_step_relax** function is the most versitile function in the code. Please try to understand its format if you want to add a new type of calculation.
+
+
