@@ -18,3 +18,4 @@ Contents
    usage
    configuration
    useful_scripts
+   calculations

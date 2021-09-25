@@ -179,7 +179,7 @@ In this example, I'm activating only the ``relax`` flag, meaning that I want to 
 
     The ``run_step_relax`` function is faily optimized, because it will make backup files of the important files on each type of calculation. If you want to restart your calculation when it stops, it will verify what are the flags that finished well and continue exactly from where you stoped. This way you don't need to be afraid to re-launch all the calculations.
 
-And that's it! Just watch it run.
+And that's it! Type ``sh vulcan.sh`` and watch it run.
 
 .. _backup:
 
