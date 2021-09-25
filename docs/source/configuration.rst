@@ -48,7 +48,7 @@ We will begin creating an Cu-FCC structure:
 Here we will put only one structure to make things easier, but the program is made so that you can put as much structures as you want.
 That's all you need for this part. It becames more complex according to the structures that you want to create, but this part is entirely up to you.
 
-.. _calculation:
+.. _calculator:
 
 Calculation setup
 -----------------
