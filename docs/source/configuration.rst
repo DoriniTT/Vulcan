@@ -5,7 +5,7 @@ Configuration - vulcan.py
 
 This is the most important part. Let's do a step-by-step general configuration with a example structure.
 
-I'll assume that you have access to a supercomputer to launch your calculations as a job (i.e. Slurm). I'll show later how to launch your calculations in your desktop machine later. 
+I'll assume that you have access to a supercomputer to launch your calculations as a job (i.e. Slurm). I'll show later how to launch your calculations in your desktop machine. 
 To begin with, create a new directory in your $HOME (~) for this project and put both the vulcan.py and vulcan.sh there.
 
 .. code-block:: console
@@ -62,7 +62,7 @@ Launch script setup
 -------------------
 
 The last thing that you need to create is a ``launch_{your-machine}`` function (it is located right after the ``run_step_relax`` function). I have 4 functions created depending on the machine that I'm using. You need to create your own function based on a JOB script that you want.
-In my case, I automitized the number of processors that the JOB script will launch based on each structure's number of atoms. You can take advantage on the code's defined variables to adjust how you automitize your JOB.
+In my case, I automatized the number of processors that the JOB script will launch based on each structure's number of atoms. You can take advantage on the code's defined variables to adjust how you automatize your JOB.
 
 **Important:** The only line that you cannot touch in the JOB script is the: 
 
@@ -78,7 +78,7 @@ Optional setup
 --------------
 
 Although this is a optional, I highly recommend you to take a look on the ``run_step_relax`` function on the vulcan.py script. Depending on the type of calculation you intend to do, this is the function that you need to modify. 
-Again, it has default parameters that works well for some cases.
+Again, it has default parameters that works well for most cases.
 
 .. note::
 

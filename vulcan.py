@@ -30,7 +30,8 @@ r_from_data = False
 list_of_structures_id_to_restart = []
 name_of_database = ''
 ###############################################################################
-new_structure = False
+new_structure = True
+write_file_structures = False
 
 def structures(restart_from_database=r_from_data, new_structure=new_structure) -> list:
 
@@ -75,6 +76,10 @@ def structures(restart_from_database=r_from_data, new_structure=new_structure) -
         elif height != None:
             del atoms[[atom.index for atom in atoms if atom.positions[2] <= heigth]]
 
+    def supercell(atoms, matrix=[1, 1, 1]):
+
+        atoms = make_supercell(atoms, [[matrix[0], 0, 0], [0, matrix[1], 0], [0, 0, matrix[2]]])
+
     #################### HELPER FUNCTIONS ########################
 
     #################### RESTARTING FROM THE DATABASE ########################
@@ -90,20 +95,22 @@ def structures(restart_from_database=r_from_data, new_structure=new_structure) -
 
     ##########################################################################
 
+    if new_structure == True:
+
+        #################### DEFINE THE STRUCTURES HERE ########################
+
+        struc = [0]
+
+        #######################################################################
+
     else:
-        if new_structure == True:
+        structures = sorted(glob.glob(cwd+'/structures/*.vasp'))
+        struc = [ read(i, format="vasp") for i in structures ]
 
-            #################### DEFINE THE STRUCTURES HERE ########################
+    if write_file_structures == True:
 
-            struc = [0]
-
-            #######################################################################
-
-            for n, s in enumerate(struc):
-                write(cwd+"/structures/"+str(s.get_chemical_formula(mode='hill'))+"_"+str(n)+".vasp", s)
-        else:
-            structures = sorted(glob.glob(cwd+'/structures/*.vasp'))
-            struc = [ read(i, format="vasp") for i in structures ]
+        for n, s in enumerate(struc):
+            write(cwd+"/structures/"+str(s.get_chemical_formula(mode='hill'))+"_"+str(n)+".vasp", s)
 
     mycontent = '''STRUCTURE_SIZE="'''+str(len(struc) - 1)+'''"
 '''
@@ -383,7 +390,7 @@ class Calculo(Configure):
 
             self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix)
             sb.run(["cat XDATCAR >> XDATCAR_production"], shell=True)
-            sb.run(["awk <PCDAT >>"+md_dir+"PCDAT_prod."+str(steps_production)+"_"+str(unique_identifier)+"_"+str(n)+"fs ' NR==8 {pcskal=$1} NR==9 {pcfein=$1} NR>=13 {line=line+1; print (line-0.5)*pcfein/pcskal,$1} '"], shell=True)
+            sb.run(["awk <PCDAT >>"+md_dir+"PCDAT_prod."+str(new_steps)+"_"+str(unique_identifier)+"_"+str(n)+"fs ' NR==8 {pcskal=$1} NR==9 {pcfein=$1} NR>=13 {line=line+1; print (line-0.5)*pcfein/pcskal,$1} '"], shell=True)
             sb.run(["grep 'free  energy' OUTCAR | awk ' {print $5}' >> "+md_dir+"prod_energy_"+str(unique_identifier)+"_"+str(n)+".dat"], shell=True)
         else:
             sb.run(["touch "+md_dir+"finished_production_"+str(n)], shell=True)
@@ -404,7 +411,7 @@ class Calculo(Configure):
 
             self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix)
             sb.run(["cat XDATCAR >> XDATCAR_final"], shell=True)
-            sb.run(["awk <PCDAT >>"+md_dir+"PCDAT_final."+str(steps_final)+"_"+str(unique_identifier)+"_"+str(n)+"fs ' NR==8 {pcskal=$1} NR==9 {pcfein=$1} NR>=13 {line=line+1; print (line-0.5)*pcfein/pcskal,$1} '"], shell=True)
+            sb.run(["awk <PCDAT >>"+md_dir+"PCDAT_final."+str(new_steps)+"_"+str(unique_identifier)+"_"+str(n)+"fs ' NR==8 {pcskal=$1} NR==9 {pcfein=$1} NR>=13 {line=line+1; print (line-0.5)*pcfein/pcskal,$1} '"], shell=True)
             sb.run(["grep 'free  energy' OUTCAR | awk ' {print $5}' >> "+md_dir+"final_energy_"+str(unique_identifier)+"_"+str(n)+".dat"], shell=True)
         else:
             sb.run(["touch "+md_dir+"finished_final_"+str(n)], shell=True)

@@ -18,8 +18,28 @@ Requirements
 Installation
 ------------
 
-It is only necessary to get two files to use this program for now: vulcan.py and vulcan.sh. They can be found at my GitHub page:
-https://github.com/DoriniTT/Vulcan
+The code is divided into two essential files ("vulcan.py" and "vulcan.sh") and three complementary files ("vulcan_custom_calculators.py", "vulcan_helper.py", and "vulcan_structures.py"). These files can be obtained by cloning my github repertory:
+
+.. code-block:: console
+
+   $ git clone https://github.com/DoriniTT/Vulcan
+
+I use the complementary files as **modules** for the essential files, so you'll need to add where to find these files in your ``PYTHONPATH``. Essentially, these files are helpful for two things: (1) Creating the structures you desire with the "vulcan_helper.py" and "vulcan_structures.py" and (2) Defining the calculator with the "vulcan_custom_calculators.py". There are a few examples inside these files that I used, so fell free to use them as a template for your case. 
+
+By default, I store these files in ``python/launch/``. Therefore, I suggest you put them somewhere you'll easily find:
+
+.. code-block:: console
+
+   $ mkdir -p <path-the-git-repo>/python/launch
+   $ touch <path-the-git-repo>/python/launch/__init__.py
+
+And put the following in your ~/.bashrc:
+
+.. code-block:: console
+
+   $ export PYTHONPATH=${PYTHONPATH}:<path-to-git-repo>/python
+
+This way these complementary files are acessible to the vulcan.py file and you are ready to go.
 
 Initialization
 --------------
