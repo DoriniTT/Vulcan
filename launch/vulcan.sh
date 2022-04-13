@@ -2,10 +2,10 @@
 # Author: Thiago Trevizam Dorini
 ######################################
 #-------Parameters------#
-PROJECT=""
-namework=""
+PROJECT="PDIN"
+namework="surf_energy_final_pdin"
 machine="explor"
-partition_explor="std" # On Explor --"std", "sky", "mysky"
+partition_explor="mysky" # On Explor --"std", "sky", "mysky", "freestdepyc", "mystdcasijl", "freestdcas"
 partition_occigen="HSW24" # On Occigen -- "BDW28", "HSW24"
 
 vasp="True"
@@ -25,7 +25,7 @@ steps_final="200"
 temperature_final="300"
 ##
 gamma="False"
-relax="False"
+relax="True"
 scf="False"
 hse="False"
 dos="False"
@@ -36,14 +36,21 @@ nbands="500"
 stm="False"
 ##
 adsorption="False"
-plane_of_separation="8" # In the z direction
+plane_of_separation="24" # In the z direction
 calculate_chgdiff="False"
 ##
 enthalpy="False"
+coh="False"
+##
+surf_energy="False"
+count_relation="1"
+numb_of_layers="8"
+##
+relax_far="False"
 ##
 #-------Parameters------#
 encut="500"
-xc="optpbe-vdw"
+xc="pbe"
 ######RESULTS######
 results="False" # Sometimes it does not work, use it carefully.
 ######################################
@@ -88,13 +95,29 @@ do
     #----------Creating the vasp.slurm----------#
 
     if [[ $machine == "idefix" ]]; then
-        echo -e "from vulcan import *\nx = Calculo('$here' ,'$work', '$database', '$xc', $encut)\nx.run_step_relax($structure, vasp=$vasp, qe=$qe, slab=$slab, md=$md, steps_production=float('$steps_production'), steps_final=float('$steps_final'), temperature_final=float('$temperature_final'), gamma=$gamma, relax=$relax, scf=$scf, hse=$hse,  dos=$dos, stm=$stm, cohp=$cohp, nbands=float('$nbands'), adsorption=$adsorption, plane_of_separation=float('$plane_of_separation'), calculate_chgdiff=$calculate_chgdiff, bader=$bader, idefix=True, ncore_test=$ncore_test, new=$new, dftu=$dftu, results=$results)" > run_$structure.py
+        echo -e "from vulcan import *\nx = Calculo('$here' ,'$work', '$database', '$xc', $encut)\nx.run_step_relax($structure, vasp=$vasp, qe=$qe, slab=$slab, md=$md, steps_production=float('$steps_production'), steps_final=float('$steps_final'), temperature_final=float('$temperature_final'), gamma=$gamma, relax=$relax, scf=$scf, hse=$hse,  dos=$dos, stm=$stm, cohp=$cohp, nbands=float('$nbands'),
+        adsorption=$adsorption, plane_of_separation=float('$plane_of_separation'), enthalpy=$enthalpy, coh=$coh, surf_energy=$surf_energy, count_relation=int('$count_relation'), numb_of_layers=int('$numb_of_layers'), calculate_chgdiff=$calculate_chgdiff, bader=$bader, idefix=True, relax_far=$relax_far, ncore_test=$ncore_test, new=$new, dftu=$dftu, results=$results)" > run_$structure.py
 
     else
-        echo -e "from vulcan import *\nx = Calculo('$here' ,'$work', '$database', '$xc', $encut)\nx.run_step_relax($structure, vasp=$vasp, qe=$qe, slab=$slab, md=$md, steps_production=float('$steps_production'), steps_final=float('$steps_final'), temperature_final=float('$temperature_final'), gamma=$gamma, relax=$relax, scf=$scf, hse=$hse,  dos=$dos, stm=$stm, cohp=$cohp, nbands=float('$nbands'), adsorption=$adsorption, plane_of_separation=float('$plane_of_separation'), calculate_chgdiff=$calculate_chgdiff, bader=$bader, ncore_test=$ncore_test, new=$new, dftu=$dftu, results=$results)" > run_$structure.py
+        echo -e "from vulcan import *\nx = Calculo('$here' ,'$work', '$database', '$xc', $encut)\nx.run_step_relax($structure, vasp=$vasp, qe=$qe, slab=$slab, md=$md, steps_production=float('$steps_production'), steps_final=float('$steps_final'), temperature_final=float('$temperature_final'), gamma=$gamma, relax=$relax, scf=$scf, hse=$hse,  dos=$dos, stm=$stm, cohp=$cohp, nbands=float('$nbands'),
+        adsorption=$adsorption, plane_of_separation=float('$plane_of_separation'), enthalpy=$enthalpy, coh=$coh, surf_energy=$surf_energy, count_relation=int('$count_relation'), numb_of_layers=int('$numb_of_layers'), calculate_chgdiff=$calculate_chgdiff, relax_far=$relax_far, bader=$bader, ncore_test=$ncore_test, new=$new, dftu=$dftu, results=$results)" > run_$structure.py
     fi
 
     mkdir -p $work; mv launch_$structure.py run_$structure.py $work; cp *.py *.vasp *.cif *.db $work 2>/dev/null; cd $work
+    echo -e "$here" > homepath
+
+    #------CANCEL SCRIPT-----#
+
+    #cat > verify.sh < EOF
+    ##!/usr/bin/env sh
+    #total_time=20 #hours -- total time
+
+    #while [ total_time -gt 2 ]
+    #do
+    #sleep 3600
+    #let "total_time=total_time-1"
+    #done
+    #EOF
 
     #------LAUNCH------#
     if [[ $machine != "idefix" ]]; then
@@ -125,5 +148,7 @@ do
     rm launch_$structure.py run_$structure.slurm
 
     cd $here
+
+    echo -e "$work" > workpath
 
 done

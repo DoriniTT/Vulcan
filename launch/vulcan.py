@@ -7,12 +7,18 @@ import numpy as np
 import time
 import json
 import math as m
+import pint
 import glob
 import subprocess as sb
+import datetime
+from launch.vulcan_helper import * # My functions!
+from launch.vulcan_structures import * # My functions!
+from launch.vulcan_custom_calculators import * # My functions!
+from collections import defaultdict
 from subprocess import check_output
 from ase.spacegroup import get_spacegroup
 from ase.visualize import view
-from ase.build import surface, bulk, make_supercell, cut, stack, add_vacuum, molecule, rotate, add_adsorbate
+from ase.build import surface, bulk, make_supercell, cut, stack, add_vacuum, molecule, rotate, add_adsorbate, fcc111
 from ase import Atoms
 from ase.io import read, write
 from ase.calculators.vasp import Vasp
@@ -30,57 +36,10 @@ r_from_data = False
 list_of_structures_id_to_restart = []
 name_of_database = ''
 ###############################################################################
-new_structure = True
-write_file_structures = False
 
-def structures(restart_from_database=r_from_data, new_structure=new_structure) -> list:
+def structures(restart_from_database=r_from_data) -> list:
 
     global struc
-
-    if new_structure == True:
-        cwd = '.'
-    else:
-        cwd = os.environ.get("here")
-
-    try:
-        sb.run(["mkdir "+cwd+"/structures"], shell=True)
-    except:
-        print("Getting structures from the structures folder")
-
-    #################### HELPER FUNCTIONS ########################
-
-    def stack_structures(substrate, support, distance=1.7, vacuum=15) -> object:
-
-        zmin = support.positions[:, 2].min()
-        zmax = substrate.positions[:, 2].max()
-        support.positions += (0, 0, zmax - zmin + distance)
-        c = support.positions[:, 2].max()
-        interface = substrate + support
-        interface.set_cell([interface.get_cell()[0][0], interface.get_cell()[1][1], c])
-        add_vacuum(interface, vacuum)
-        return interface
-
-    def constraint(atoms, less_position=None, symbol=None):
-
-        if less_position != None:
-            c = FixAtoms(indices=[atom.index for atom in atoms if atom.position[2] <= less_position])
-        elif symbol != None:
-            c = FixAtoms(indices=[atom.index for atom in atoms if atom.symbol == symbol])
-        #atoms.set_constraint(c)
-        return c
-
-    def delete_atoms(atoms, sym=None, height=None):
-
-        if sym != None:
-            del atoms[[atom.index for atom in atoms if atom.symbol == sym]]
-        elif height != None:
-            del atoms[[atom.index for atom in atoms if atom.positions[2] <= heigth]]
-
-    def supercell(atoms, matrix=[1, 1, 1]):
-
-        atoms = make_supercell(atoms, [[matrix[0], 0, 0], [0, matrix[1], 0], [0, 0, matrix[2]]])
-
-    #################### HELPER FUNCTIONS ########################
 
     #################### RESTARTING FROM THE DATABASE ########################
 
@@ -95,57 +54,32 @@ def structures(restart_from_database=r_from_data, new_structure=new_structure) -
 
     ##########################################################################
 
-    if new_structure == True:
+    #################### DEFINE THE STRUCTURES HERE ########################
 
-        #################### DEFINE THE STRUCTURES HERE ########################
+    s = read("pdin.vasp")
+    s1 = s.copy()
+    s1 = supercell(s1, matrix=[1, 1, 8])
+    s1 = cut(s1, nlayers=13)
+    add_vacuum(s1, 10)
+#     view(s1)
 
-        struc = [0]
+    s2 = s.copy()
+    s2 = cut(s2, origo=[0.5, 0.5, 0.5])
+    s2 = supercell(s2, matrix=[1, 1, 8])
+    s2 = cut(s2, nlayers=13)
+    add_vacuum(s2, 10)
+#     view(s2)
 
-        #######################################################################
+    struc = [s1, s2]
 
-    else:
-        structures = sorted(glob.glob(cwd+'/structures/*.vasp'))
-        struc = [ read(i, format="vasp") for i in structures ]
-
-    if write_file_structures == True:
-
-        for n, s in enumerate(struc):
-            write(cwd+"/structures/"+str(s.get_chemical_formula(mode='hill'))+"_"+str(n)+".vasp", s)
+    #######################################################################
 
     mycontent = '''STRUCTURE_SIZE="'''+str(len(struc) - 1)+'''"
 '''
     with open("structure_size", "w") as f:
         f.write(mycontent)
 
-    #a1 = bulk('Cu', 'fcc', a=3.6)
-    #struc = [a1]
     return struc
-
-def calculators(vasp=False, qe=False, encut=400):
-
-    if vasp == True:
-
-        abinit = Vasp(istart=0, algo = 'Fast', nelm=40,setups='recommended',\
-            ediff=1e-5, ediffg=-0.05, ismear=0, xc = 'pbe',\
-            prec = 'Accurate', lreal = 'Auto', kpts=(1,1,1), gamma=True,\
-            ibrion=2, isif=2, nsw=500, laechg = False, lorbit = 11, lvtot=False, lwave=False,\
-            ncore=4, encut=encut)
-
-    elif qe == True:
-
-        pseudopotentials = {'Na': 'Na.pbe-spn-kjpaw_psl.1.0.0.UPF',\
-                'Cl': 'Cl.pbe-n-kjpaw_psl.1.0.0.UPF', 'Al': 'Al.pbe-n-kjpaw_psl.1.0.0.UPF',\
-                    'Co': 'Co.pbe-spn-kjpaw_psl.0.3.1.UPF', 'O': 'O.pbe-n-kjpaw_psl.1.0.0.UPF',\
-                        'H': 'H.pbe-kjpaw_psl.1.0.0.UPF'}
-
-        abinit = Espresso(pseudopotentials=pseudopotentials,\
-            tstress=True, tprnfor=True, calculation='relax', etot_conv_thr=1e-5, \
-                    forc_conv_thr=0.03, nstep=500, ecutwfc=80, ecutrho=800, occupations='smearing',\
-                        degauss=0.002, smearing = 'marzari-vanderbilt', mixing_beta = 0.7, \
-                            ion_dynamics = 'damp', electron_maxstep = 40, scf_must_converge=False,\
-                                adaptive_thr=True)
-
-    return abinit
 
 ###############################---Functions to modify---###############################
 
@@ -166,7 +100,7 @@ class Configure():
 
     def get_calculators(self, vasp=False, qe=False):
 
-        calc = calculators(vasp=vasp, qe=qe, encut=self.encut)
+        calc = general_calculator(vasp=vasp, qe=qe, encut=self.encut)
         return calc
 
     def verify_outcar(self, outcar_name, reached=False, time=False):
@@ -198,7 +132,7 @@ class Configure():
             spgroup = get_spacegroup(structures[n]).symbol.replace(" ","").replace("/", "_")
             namefile = structures[n].get_chemical_formula(mode='hill')
 
-        unique_identifier = str(namefile)+"_"+str(spgroup)+"_"+self.xc+"_"+str(self.encut)
+        unique_identifier = str(namefile)+"_"+str(spgroup)+"_"+self.xc+"_"+str(self.encut)+"_"+str(n)
 
         if not os.path.isdir(unique_identifier):
             sb.run(["mkdir "+unique_identifier], shell=True)
@@ -361,7 +295,7 @@ class Calculo(Configure):
                 print("There is an error in the database!")
             s = structures[n]
 
-        return s
+        return energy
 
     def md(self, n, steps_production=5, steps_final=10, temperature_final=5000, vasp=False, qe=False, new=False, idefix=False) -> None:
 
@@ -422,9 +356,11 @@ class Calculo(Configure):
                        stm=False, eint=[-1], \
                        hse=False, \
                        enthalpy=False, \
-                       cohesive=False, \
+                       coh=False, \
                        adsorption=False, plane_of_separation=0, calculate_chgdiff=False, bader=False,\
                        cohp=False, nbands=1000, \
+                       surf_energy=False, count_relation=1, numb_of_layers=8, \
+                       relax_far=False, \
                        results=True) -> None :
 
         global structures, kpts, y, calc
@@ -440,6 +376,10 @@ class Calculo(Configure):
         kpts = (1, 1, 1)
         if vasp == True:
             inputs = ["INCAR", "KPOINTS", "POTCAR", "IBZKPT", "vasprun.xml", "OUTCAR", "OSZICAR", "CONTCAR", "POSCAR", "XDATCAR", "CHGCAR"]
+        if slab==True:
+            calc.set(idipol=3, ldipol=True) # Define this!
+        else:
+            calc.set(idipol=None, ldipol=None) # Define this!
 
         #----------MD---------#
         if md == True:
@@ -479,11 +419,6 @@ class Calculo(Configure):
             kpts = self.set_kpts(slab=slab)
 
             if vasp == True:
-                if slab==True:
-                    calc.set(idipol=3, ldipol=True) # Define this!
-                else:
-                    calc.set(idipol=None, ldipol=None) # Define this!
-
                 if idefix:
                     calc.set(command='mpirun -np 12 vasp_std')
                 elif kpts == (1, 1, 1):
@@ -494,7 +429,13 @@ class Calculo(Configure):
 
                 x = self.verify_outcar("OUTCAR_relax", reached=True)
                 if isinstance(x, int):
-                    self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
+
+                    if os.path.exists("mystate_relax.json") and os.path.getsize("mystate_relax.json") > 0:
+                        structures[n].calc = calc
+                        energy = structures[n].get_potential_energy()
+                        calc.write_json('mystate_relax.json')
+                    else:
+                        self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
                     if idefix:
                         sb.run(["touch ../finished_calculation"], shell=True)
                     for i in inputs:
@@ -536,7 +477,7 @@ class Calculo(Configure):
                 else:
                     calc.set(command='srun vasp_std')
 
-                calc.set(kpts=kpts, nsw=0, nelm=150, encut=500, lreal=False)
+                calc.set(kpts=kpts, nsw=0, nelm=150, lreal=False)
 
                 x = self.verify_outcar("OUTCAR_scf", time=True)
                 if isinstance(x, int):
@@ -807,7 +748,7 @@ userecommendedbasisfunctions
             if vasp == True:
 
                 kpts = self.set_kpts(slab=slab)
-                calc.set(kpts=kpts, nsw=0)
+                calc.set(kpts=kpts, nsw=500, isif=3, ediffg=-0.02)
 
                 if idefix:
                     calc.set(command='mpirun -np 12 vasp_std')
@@ -816,76 +757,109 @@ userecommendedbasisfunctions
                 else:
                     calc.set(command='srun vasp_std')
 
-                x = self.verify_outcar("OUTCAR_scf_enthalpy", reached=True)
-                if isinstance(x, int):
-                    s = self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
-                    db.write(s, type_calc="scf_enthalpy")
-                    if idefix:
-                        sb.run(["touch ../finished_calculation"], shell=True)
-                    for i in inputs:
-                        sb.run(["cp "+i+" "+i+"_scf_enthalpy"], shell=True)
+                energies_per_bulk, cohesive_energies = defaultdict(dict), defaultdict(dict)
 
-                for bulk in bulks_final:
-                    precision=7
-                    k = (max(1,int(precision*2*m.pi/bulk.get_cell()[0][0])), \
-                        max(1,int(precision*2*m.pi/bulk.get_cell()[1][1])), \
-                        max(1,int(precision*2*m.pi/bulk.get_cell()[2][2])))
-                    calc.set(isif=3, ibrion=2, ediffg=-0.02, kpts=k)
-                    bulk.calc = calc
-                    x = self.verify_outcar("OUTCAR_"+str(bulk.get_chemical_formula(mode='hill')), reached=True)
+                for xcpot in ["pbe", "optpbe-vdw"]:
+
+                    sb.run(["mkdir "+str(xcpot)],shell=True)
+                    os.chdir(str(xcpot))
+                    calc.set(xc=xcpot)
+
+                    formula_struc = structures[n].get_chemical_formula(mode='hill')
+                    print(formula_struc)
+                    x = self.verify_outcar("OUTCAR_enthalpy", reached=True)
                     if isinstance(x, int):
-                        e = bulk.get_potential_energy()
+                        energ = self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
+                        db.write(structures[n], type_calc="enthalpy")
+                        if idefix:
+                            sb.run(["touch ../finished_calculation"], shell=True)
                         for i in inputs:
-                            sb.run(["cp "+i+" "+i+"_"+str(bulk.get_chemical_formula(mode='hill'))], shell=True)
-                        db.write(bulk, type_calc="bulks_enthalpy")
+                            sb.run(["cp "+i+" "+i+"_enthalpy"], shell=True)
+                    else:
+                        energ = read("OUTCAR_enthalpy", format="vasp-out").get_potential_energy()
+                    #energies_per_bulk.update = {formula_struc: {xcpot: energ}}
+                    energies_per_bulk[formula_struc][xcpot] = energ
 
-                sb.run(["cp CONTCAR_scf_enthalpy CONTCAR"], shell=True)
+                    # To the final formula:
+                    # To do:
+                    e_tot = read("OUTCAR_enthalpy", format="vasp-out").get_potential_energy()
+                    tot_number_of_atoms = len(structures[n].get_chemical_symbols())
+                    elements_in_structure = []
+                    [elements_in_structure.append(x) for x in structures[n].get_chemical_symbols()if x not in elements_in_structure]
+                    #elements_in_structure = list(set(s.get_chemical_symbols()))
+                    n_atoms_per_element = {}
+
+                    for el in elements_in_structure:
+                        number = structures[n].get_chemical_symbols().count(el)
+                        n_atoms_per_element[el] = number
+
+                    # Number of each atom in the structure:
+
+                    ####################
+
+                    for bulk in bulks_final:
+                        precision=6
+                        k = (max(1,int(precision*2*m.pi/bulk.get_cell()[0][0])), \
+                            max(1,int(precision*2*m.pi/bulk.get_cell()[1][1])), \
+                            max(1,int(precision*2*m.pi/bulk.get_cell()[2][2])))
+                        calc.set(isif=3, ibrion=2, ediffg=-0.02, kpts=k)
+                        bulk.calc = calc
+                        n_of_atoms_bulk = len(bulk.get_chemical_symbols())
+                        element = bulk.get_chemical_symbols()[0]
+
+                        sb.run(["mkdir "+str(element)],shell=True)
+                        os.chdir(str(element))
+
+                        x = self.verify_outcar("OUTCAR_"+str(bulk.get_chemical_formula(mode='hill')), reached=True)
+                        if isinstance(x, int):
+                            e_bulk = bulk.get_potential_energy()
+                            for i in inputs:
+                                sb.run(["cp "+i+" "+i+"_"+str(bulk.get_chemical_formula(mode='hill'))], shell=True)
+                            db.write(bulk, type_calc="bulks_enthalpy")
+                        else:
+                            e_bulk = read("OUTCAR_"+str(bulk.get_chemical_formula(mode='hill')), format="vasp-out").get_potential_energy()
+                        energies_per_bulk[element][xcpot] = e_bulk
+
+                        if coh == True:
+
+                            # Cohesion energy
+                            kpts = (1, 1, 1)
+                            at = bulk.get_chemical_symbols()[0]
+                            atomo = Atoms(at, positions=[(0, 0, 0)], cell=[13, 14, 15], pbc=True)
+                            calc.set(isif=None, ibrion=2, nsw=0, nelm=1000, kpts=kpts)
+                            atomo.calc = calc
+                            x = self.verify_outcar("OUTCAR_at_"+str(atomo.get_chemical_formula(mode='hill')), time=True)
+                            if isinstance(x, int):
+                                e_atomo = atomo.get_potential_energy()
+                                for i in inputs:
+                                    sb.run(["cp "+i+" "+i+"_at_"+str(atomo.get_chemical_formula(mode='hill'))], shell=True)
+                                db.write(atomo, type_calc="atomo_cohesion")
+                            else:
+                                e_atomo = read("OUTCAR_at_"+str(atomo.get_chemical_formula(mode='hill'))).get_potential_energy()
+
+                            cohesive = (e_bulk - n_of_atoms_bulk * e_atomo)/n_of_atoms_bulk
+                            cohesive_energies[element][xcpot] = cohesive
+                            with open(self.homedir+"/cohesive_energy_"+str(bulk.get_chemical_formula(mode='hill')), "w") as f:
+                                f.write("Cohesive energy of bulk "+str(atomo.get_chemical_formula(mode='hill')+" is: "+str(cohesive))+"\n")
+                                f.write("Number of atoms bulk: "+str(n_of_atoms_bulk)+"\n")
+                                f.write("E_bulk: "+str(e_bulk)+"\n")
+                                f.write("E_atomo: "+str(e_atomo)+"\n")
+
+                            sb.run(["rm CHG* vasprun*"], shell=True)
+
+                        os.chdir("..")
+
+                    os.chdir("..")
+                sb.run(["cp CONTCAR_enthalpy CONTCAR"], shell=True)
+
+                with open(self.homedir+'/results.json', 'w') as convert_file:
+                    convert_file.write(json.dumps(energies_per_bulk))
+                with open(self.homedir+'/cohesive_energies.json', 'w') as convert_file:
+                    convert_file.write(json.dumps(cohesive_energies))
+                # Calculating enthalpy of formation
+                #hf = ( e_tot - (  ) )/tot_number_of_atoms
 
         #--------FORMATION ENTHALPY-------#
-
-        calc = calc_copy.copy()
-        calc = calc[0]
-        #--------COHESIVE ENERGY-------#
-        # Given a specific structure, calculate its cohesive energy.
-
-        if cohesive == True:
-
-            if vasp == True:
-
-                if idefix:
-                    calc.set(command='mpirun -np 12 vasp_std')
-                else:
-                    calc.set(command='srun vasp_std')
-
-                kpts = self.set_kpts(slab=slab)
-                calc.set(kpts=kpts, nsw=0)
-                x = self.verify_outcar("OUTCAR_scf_cohesive", reached=True)
-                if isinstance(x, int):
-                    s = self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
-                    db.write(s, type_calc="scf_cohesive")
-                    if idefix:
-                        sb.run(["touch ../finished_calculation"], shell=True)
-                    for i in inputs:
-                        sb.run(["cp "+i+" "+i+"_scf_cohesive"], shell=True)
-
-                # Define the structures here
-
-                #for bulk in bulks_final:
-                #    precision=7
-                #    k = (max(1,int(precision*2*m.pi/bulk.get_cell()[0][0])), \
-                #        max(1,int(precision*2*m.pi/bulk.get_cell()[1][1])), \
-                #        max(1,int(precision*2*m.pi/bulk.get_cell()[2][2])))
-                #    calc.set(isif=3, ibrion=2, ediffg=-0.02, kpts=k)
-                #    bulk.calc = calc
-                #    x = self.verify_outcar("OUTCAR_"+str(bulk.get_chemical_formula(mode='hill')), reached=True)
-                #    if isinstance(x, int):
-                #        e = bulk.get_potential_energy()
-                #        for i in inputs:
-                #            sb.run(["cp "+i+" "+i+"_"+str(bulk.get_chemical_formula(mode='hill'))], shell=True)
-                #        db.write(bulk, type_calc="bulks_enthalpy")
-
-                #sb.run(["cp CONTCAR_scf_enthalpy CONTCAR"], shell=True)
-        #--------COHESIVE ENERGY-------#
 
         calc = calc_copy.copy()
         calc = calc[0]
@@ -965,13 +939,180 @@ userecommendedbasisfunctions
                 sb.run(["touch ../finished_calculation"], shell=True)
         #--------HSE-------#
 
+        calc = calc_copy.copy()
+        calc = calc[0]
+        #--------SURFACE ENERGY-------#
+        if surf_energy == True:
+
+            import pint
+            ureg = pint.UnitRegistry()
+
+            kpts = self.set_kpts(slab=slab)
+
+            # For the bulk ------------------------------------
+
+            if idefix:
+                calc.set(command='mpirun -np 12 vasp_std')
+            elif kpts == (1, 1, 1):
+                calc.set(command='srun vasp_gam')
+            else:
+                calc.set(command='srun vasp_std')
+
+            calc.set(isif=3, ibrion=2, ediffg=-0.02, kpts=kpts, nsw=200)
+
+            x = self.verify_outcar("OUTCAR_relax", reached=True)
+            if isinstance(x, int):
+                self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
+                sb.run(["cp OUTCAR OUTCAR_relax; cp CONTCAR CONTCAR_relax"], shell=True)
+            energy_bulk = read("OUTCAR_relax", format="vasp-out").get_potential_energy()
+
+            structures[n] = read("CONTCAR_relax", format="vasp")
+            c = FixAtoms(indices=[atom.index for atom in structures[n] if atom.position[2] <= 0.3])
+            structures[n].set_constraint(c)
+
+            # For the surfaces ----------------------------------
+            area = structures[n].get_cell_lengths_and_angles()[0]*structures[n].get_cell_lengths_and_angles()[1]
+
+            energies = []
+            # Need to find the value of "count_relation" according to the number of layers in the bulk!!
+            layers = range(2, numb_of_layers)
+            for sup_cells in layers:
+                s = structures[n].copy()
+                s = make_supercell(s, [[1, 0, 0], [0, 1, 0], [0, 0, sup_cells]])
+                s = cut(s, nlayers=sup_cells+count_relation)
+                s.set_cell([s.get_cell()[0][0], s.get_cell()[1][1], s.get_cell()[2][2]+15])
+                n_in = s.get_chemical_symbols().count('In')
+                n_pd = s.get_chemical_symbols().count('Pd')
+
+                count_relation += 1
+
+                precision=6
+                kpts = (max(1,int(precision*2*m.pi/s.get_cell()[0][0])), \
+                    max(1,int(precision*2*m.pi/s.get_cell()[1][1])), \
+                    1)
+                calc.set(isif=2, nsw=200, nelm=60, kpts=kpts, prec='Accurate', ismear=1, lwave=False, algo="Fast", istart=0, ibrion=2)
+                s.calc = calc
+
+                if idefix:
+                    calc.set(command='mpirun -np 12 vasp_std')
+                elif kpts == (1, 1, 1):
+                    calc.set(command='srun vasp_gam')
+                else:
+                    calc.set(command='srun vasp_std')
+
+                x = self.verify_outcar("OUTCAR_surf"+str(sup_cells), time=True)
+                if isinstance(x, int):
+                    energy = s.get_potential_energy() * ureg.eV
+                    sb.run(["cp OUTCAR OUTCAR_surf"+str(sup_cells)], shell=True)
+                else:
+                    energy = read("OUTCAR_surf"+str(sup_cells), format="vasp-out").get_potential_energy() * ureg.eV
+                #energies.append(energy.magnitude/n_atoms)
+                energies.append(energy.magnitude)
+
+                sb.run(["rm CHG* vasprun*"], shell=True)
+
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            from sklearn.linear_model import LinearRegression
+
+            energies.sort(reverse=True)
+            energies = np.array(energies)
+            nlayers = np.array(layers).reshape((-1, 1))
+            print(nlayers)
+            print(energies)
+            model = LinearRegression()
+            model.fit(nlayers, energies)
+            I = model.intercept_
+            print('intercept:', model.intercept_)
+            print('slope:', model.coef_)
+            gamma_eV = I/(2*area) * ureg["eV/angstrom**2"]
+            gamma = gamma_eV.to("J/meter**2")
+            print(gamma_eV)
+            print(gamma)
+
+            fig, ax = plt.subplots()
+            ax.scatter(nlayers, energies)
+            plt.text(0.7,0.95,r'$\gamma$: '+str(round(gamma,4))+r' J/m$^2$',horizontalalignment='left', verticalalignment='baseline', transform = ax.transAxes)
+            plt.text(0.7,0.9,r'$\gamma$: '+str(round(gamma_eV,4))+r' eV/\AA$^2$',horizontalalignment='left', verticalalignment='baseline', transform = ax.transAxes)
+            plt.text(0.7,0.85,'intercept: '+str(round(model.intercept_, 4)),horizontalalignment='left', verticalalignment='baseline', transform = ax.transAxes)
+            plt.text(0.7,0.8,'slope: '+str(round(model.coef_[0], 4)),horizontalalignment='left', verticalalignment='baseline', transform = ax.transAxes)
+            ax.grid()
+            ax.set(xlabel="Number of layers", ylabel=r"E$_{\rm tot}$ (eV)")
+            ax.plot(nlayers, model.predict(nlayers))
+            fig.savefig(self.homedir+"/surf_energy.pdf")
+            #sb.run(["evince "+self.homedir+"/surf_energy.pdf"], shell=True)
+            #plt.show()
+
+        #--------SURFACE ENERGY-------#
+
+        calc = calc_copy.copy()
+        calc = calc[0]
+        #--------RELAX FAR STRUCTURES-------#
+        if relax_far == True:
+            kpts = self.set_kpts(slab=slab)
+
+            if vasp == True:
+                if slab==True:
+                    calc.set(idipol=3, ldipol=True) # Define this!
+                else:
+                    calc.set(idipol=None, ldipol=None) # Define this!
+
+                if idefix:
+                    calc.set(command='mpirun -np 12 vasp_std')
+                elif kpts == (1, 1, 1):
+                    calc.set(command='srun vasp_gam')
+                else:
+                    calc.set(command='srun vasp_std')
+                calc.set(kpts=kpts)
+
+                x = self.verify_outcar("OUTCAR_relax1", reached=True)
+                if isinstance(x, int):
+                    calc.set(isif=7, nsw=20)
+                    self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
+                    for i in inputs:
+                        sb.run(["cp OUTCAR OUTCAR_relax1"], shell=True)
+
+                x = self.verify_outcar("OUTCAR_relax2", reached=True)
+                if isinstance(x, int):
+                    calc.set(isif=2, nsw=20)
+                    self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
+                    for i in inputs:
+                        sb.run(["cp OUTCAR OUTCAR_relax2"], shell=True)
+
+                x = self.verify_outcar("OUTCAR_relax3", reached=True)
+                if isinstance(x, int):
+                    calc.set(isif=7, nsw=20)
+                    self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
+                    for i in inputs:
+                        sb.run(["cp OUTCAR OUTCAR_relax3"], shell=True)
+
+                x = self.verify_outcar("OUTCAR_relax4", reached=True)
+                if isinstance(x, int):
+                    calc.set(isif=2, nsw=20)
+                    self.calculation(n, vasp=vasp, qe=qe, new=new, idefix=idefix, dftu=dftu)
+                    for i in inputs:
+                        sb.run(["cp OUTCAR OUTCAR_relax4"], shell=True)
+                        sb.run(["cp OUTCAR_relax"], shell=True)
+
+        #--------RELAX FAR STRUCTURE-------#
+
+        x = self.verify_outcar("OUTCAR_relax", reached=True)
+        if isinstance(x, int):
+            try:
+                sb.run(["cp CONTCAR_relax CONTCAR"], shell=True)
+            except:
+                print("File CONTCAR_relax does not exist!")
+
+        calc = calc_copy.copy()
+        calc = calc[0]
         #--------NCORE TEST-------#
         if ncore_test == True:
             if idefix:
                 calc.set(command='mpirun -np 12 vasp_std')
             else:
                 calc.set(command='srun vasp_gam')
-            ncore_list = [2, 4, 8, 12]
+            ncore_list = [2, 4, 8, 16]
             kpts = (1, 1, 1)
             times = {}
             for i in ncore_list:
@@ -1017,11 +1158,15 @@ print(x)
         if bader == True and adsorption == False:
             sb.run(["chgsum.pl AECCAR0 AECCAR2; bader CHGCAR -ref CHGCAR_sum; cp ACF.dat BCF.dat "+savedir], shell=True)
 
+        if enthalpy == True:
+            sb.run(['rsync -nrv --include="*/" --include="OUTCAR*" --include="CONTCAR*" --exclude="*" . ' + savedir], shell=True)
+
 ###########################  JOB SCRIPTS #################################
 
     def launch_jeanzay(self, n, p=40):
 
         p = 40
+        time = '20:00:00'
         structures = self.get_structures()
         processors = len(structures[n].get_chemical_symbols())
         if processors > p:
@@ -1042,7 +1187,7 @@ print(x)
 #SBATCH -J '''+name+'''
 #SBATCH -o '''+name+'''.out
 #SBATCH -e '''+name+'''.out
-#SBATCH --time=20:00:00
+#SBATCH --time='''+time+'''
 #SBATCH -A fcv@cpu        # Account to specify for multiproject user
 ##SBATCH --qos=qos_cpu-dev   # Uncomment for runs under 2 hours
 
@@ -1104,7 +1249,7 @@ python run_$structure.py
                 processors += 1
         name = structures[n].get_chemical_formula(mode='hill')
 
-        #processors = 2*p
+        processors = 2*p
         myscript_content='''#!/bin/sh
 #SBATCH --nodes='''+str(int(processors/p))+'''
 ##SBATCH -A uwp34
